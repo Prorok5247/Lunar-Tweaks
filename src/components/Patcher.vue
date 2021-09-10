@@ -1,0 +1,216 @@
+<template>
+  <div>
+    <v-snackbar v-model="snackbar.enabled">
+      {{ `${snackbar.text} Going back to main screen in ${snackbar.countdown} seconds ...` }}
+    </v-snackbar>
+    <v-card v-if="isLoading" id="loading-screen" class="full-centered" elevation="8">
+      <v-card-title>Loading your file ...</v-card-title>
+      <v-card-subtitle>Please wait, we are making few things before you can edit the JAR file.</v-card-subtitle>
+      <div v-for="(step, index) in steps" :key="index" class="loading-steps">
+        <v-progress-circular v-if="step.inProgress" indeterminate color="green" width="3" size="25"></v-progress-circular>
+        <v-icon v-else-if="step.done" color="green" size="25">mdi-check-circle</v-icon>
+        <v-icon v-else-if="step.error" color="red" size="25">mdi-alert-circle</v-icon>
+        <v-icon v-else color="grey" size="25">mdi-check-circle</v-icon>
+        <span class="step-title">{{ step.name }}</span>
+      </div>
+    </v-card>
+    <v-card id="patcher-card" elevation="5"  v-if="!isLoading">
+      <v-card-title>Lunar Tweaks Patcher</v-card-title>
+      <v-btn :disabled="buildButtonDisabled == true" dark color="primary" id="save-btn" @click="saveBuild()">
+        <v-icon left>mdi-content-save</v-icon>
+        Save build
+      </v-btn>
+      <v-tabs v-model="currentTab">
+        <v-tab>
+          <v-icon left>mdi-cog-outline</v-icon>
+          <span>Tweaks</span>
+        </v-tab>
+        <v-tab disabled>
+          <v-icon left>mdi-auto-fix</v-icon>
+          <span>Customizations</span>
+        </v-tab>
+        <v-tab disabled>
+          <v-icon left>mdi-discord</v-icon>
+          <span>Discord RPC</span>
+        </v-tab>
+      </v-tabs>
+      <v-tabs-items v-model="currentTab">
+        <v-tab-item>
+          <v-card flat class="card-item">
+            <v-card-title>Patches</v-card-title>
+            <v-card-subtitle>Select every patches you want to include in your build and click "Save Build"</v-card-subtitle>
+            <div v-for="(patch, index) in patches" :key="index" class="patch-item">
+              <v-checkbox class="patch-checkbox mt-2" v-model="selectedPatches" :label="patch.name" :value="patch.internalName"></v-checkbox>
+              <v-tooltip bottom>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-icon v-on="on" v-bind="attrs" color="grey" size="22" right class="mb-3">mdi-help-circle</v-icon>
+                </template>
+                <span>{{ patch.tooltip }}</span>
+              </v-tooltip>
+            </div>
+          </v-card>
+        </v-tab-item>
+        <v-tab-item>
+          <v-card flat class="card-item">
+            <v-card-text>
+              <p>Not available</p>
+            </v-card-text>
+          </v-card>
+        </v-tab-item>
+        <v-tab-item>
+          <v-card flat class="card-item">
+            <v-card-text>
+              <p>Bored of the default Discord RPC ? Make your own</p>
+            </v-card-text>
+          </v-card>
+        </v-tab-item>
+      </v-tabs-items>
+    </v-card>
+  </div>
+</template>
+
+<script>
+import * as patcher from '../patcher';
+
+export default {
+  name: 'Patcher',
+
+  data: () => ({
+    isLoading: true,
+    currentFolder: "",
+    currentTab: "tab-Tweaks",
+    steps: [
+      { name: "Checking LT folder", done: false, inProgress: false, error: false },
+      { name: "Copying JAR file to temp", done: false, inProgress: false, error: false },
+      { name: "Extracting JAR file", done: false, inProgress: false, error: false },
+      { name: "Checking if it is a Lunar file", done: false, inProgress: false, error: false },
+      { name: "Checking commit ID", done: false, inProgress: false, error: false },
+    ],
+    snackbar: {
+      text: "",
+      countdown: 5,
+      enabled: false
+    },
+    patches: [
+      { name: "Freelook", internalName: "freelook", tooltip: "Get back Freelook on Hypixel" }, 
+      { name: "AutoTextHotkey", internalName: "autotexthotkey", tooltip: "Get AutoTextHotkey back on Hypixel" },
+      { name: "Pinned servers", internalName: "pinnedServers", tooltip: "Remove any promoted/pinned servers from the server list" },
+      { name: "Block server from disabling mods", internalName: "modspacket", tooltip: "Completely remove the packet : \"LCPacketModSettings\"" }
+    ],
+    selectedPatches: [],
+    buildButtonDisabled: false
+  }),
+
+  methods: {
+    startStep(stepIndex) {
+      this.steps[stepIndex].inProgress = true;
+    },
+    endStep(stepIndex) {
+      this.steps[stepIndex].done = true;
+      this.steps[stepIndex].inProgress = false;
+    },
+    errorOccuredOnStep(stepIndex, error) {
+      this.steps[stepIndex].inProgress = false;
+      this.steps[stepIndex].error = true;
+      this.exitPatcher(error);
+    },
+    async setupPatcher() {
+      this.startStep(0);
+      await patcher.checkLTFolder();
+      this.endStep(0);
+
+      this.startStep(1);
+      this.currentFolder = await patcher.copyJarFileToTemp(this.$store.state.lunarFilePath);
+      this.endStep(1);
+      
+      this.startStep(2);
+      await patcher.extract(this.currentFolder);
+      this.endStep(2);
+      
+      this.startStep(3);
+      const isLunar = await patcher.isLunar(this.currentFolder);
+      if(!isLunar) {
+        this.errorOccuredOnStep(3, "Please select a valid Lunar file.");
+        return;
+      }
+      this.endStep(3);
+
+      this.startStep(4);
+      const commitId = await patcher.findCommitId(this.currentFolder);
+      if(commitId === null) {
+        this.errorOccuredOnStep(4, "Wrong Lunar version. Try to update LunarTweaks.");
+        return;
+      }
+      this.endStep(4);
+
+      this.isLoading = false;
+      
+    },
+    exitPatcher(reason) {
+      this.snackbar.text = reason;
+      this.snackbar.enabled = true;
+      this.countDownExitTimer();
+      setTimeout(() => {
+        this.snackbar.enabled = false;
+        this.$store.commit('setLunarFilePath', "");
+        this.$store.commit('markFileAsChoosed', false);
+      }, 5050);
+    },
+    countDownExitTimer() {
+      if(this.snackbar.countdown > 0) {
+        setTimeout(() => {
+          this.snackbar.countdown -= 1;
+          this.countDownExitTimer(); 
+        }, 1000);
+      }
+    },
+    async saveBuild() {
+      this.buildButtonDisabled = true;
+      await patcher.saveBuild(this.currentFolder, this.selectedPatches);
+      this.buildButtonDisabled = false;
+    }
+  },
+
+  mounted () {
+    setTimeout(() => {
+      this.setupPatcher();
+    }, 500);
+  }
+};
+</script>
+
+<style>
+#loading-screen {
+  width: auto;
+  height: auto;
+  padding: 20px;
+}
+
+.loading-steps {
+  margin-left: 15px;
+  margin-bottom: 10px;
+}
+
+.step-title {
+  margin-left: 8px;
+}
+
+#save-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+}
+
+#patcher-card {
+  margin: 5ch;
+  border-radius: 10px;
+}
+
+.patch-checkbox {
+  margin-left: 15px;
+}
+
+.patch-item {
+  display: flex;
+}
+</style>
