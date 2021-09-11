@@ -1,4 +1,5 @@
 import fs from 'fs';
+import fse from 'fs-extra';
 import process from 'process';
 import { execSync } from 'child_process';
 import AdmZip from 'adm-zip';
@@ -11,13 +12,19 @@ export async function checkLTFolder() {
   return new Promise((resolve) => {
     setTimeout(() => {
       if(!fs.existsSync(LTFolderLocation)) {
-        fs.mkdirSync(LTFolderLocation);
-        fs.mkdirSync(LTTempFolderLocation)
-        resolve();
-      } else if(!fs.existsSync(LTTempFolderLocation)) {
-        fs.mkdirSync(LTTempFolderLocation)
+        fse.copySync(`${__dirname}\\..\\template`, LTFolderLocation);
         resolve();
       } else resolve();
+    }, 500);
+  });
+}
+
+export async function clearCache(currentFolderPath) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log(currentFolderPath);
+      fs.rmdirSync(currentFolderPath, { recursive: true, force: true });
+      resolve();
     }, 500);
   });
 }
@@ -63,16 +70,47 @@ export async function isLunar(currentFolderPath) {
 
 const mappings = {
   commit: {
-    id: "d74e221",
-    fullId: "d74e2214b495c083b9ba934601ef75f489176e57",
-    filePath: "lunar\\aX\\IIlllIlIlIIIlIIIlIlIlIIIl_1.lclass"
+    id: "6b9c0d7",
+    fullId: "6b9c0d7b436f8e85c931cdc93bb380fd518f0047",
+    filePath: "lunar\\aX\\lIlIllllIlIlIIllIlllIlIII_1.lclass"
   },
   paths: {
-    pinnedServers: {
-      realFileName: "lIlIllIIlIIIIlIIlIIllllII.lclass",
-      fileName: "pinnedServers.lclass",
-      path: "lunar/cX"
-    }
+    pinnedServers: [
+      {
+        realFileName: "IIlllIllIIlIlIlIllIIllIll.lclass",
+        fileName: "pinnedServers.lclass",
+        path: "lunar/cX"
+      }
+    ],
+    freelook: [
+      {
+        realFileName: "lIlIllllIlIlIIllIlllIlIII.lclass",
+        fileName: "bT freelook.lclass",
+        path: "lunar/bT"
+      },
+      {
+        realFileName: "IllllIIlIIIllIlllIlllIllI.lclass",
+        fileName: "cR freelook.lclass",
+        path: "lunar/cR"
+      },
+      {
+        realFileName: "lIlIIllIIIIIIlllllIIllIIl.lclass",
+        fileName: "dH freelook.lclass",
+        path: "lunar/dH"
+      },
+      {
+        realFileName: "llllIIllllllIlIIlIlIIIllI.lclass",
+        fileName: "fy freelook.lclass",
+        path: "lunar/fy"
+      }
+    ],
+    modspacket: [
+      {
+        realFileName: "LCPacket.lclass",
+        fileName: "LCPacket.lclass",
+        path: "com/lunarclient/bukkitapi/nethandler/"
+      }
+    ]
   }
 }
 
@@ -99,17 +137,19 @@ function asciiToHex(str) {
 export async function patch(currentFolderPath, patchName) {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const patch = mappings.paths[patchName];
+      const patchs = mappings.paths[patchName];
       const jarFile = new AdmZip(`${currentFolderPath}\\currentJarFile.jar`);
-      let fileEntry;
-      jarFile.getEntries().forEach(entry => {
-        if(entry.entryName === `${patch.path}/${patch.realFileName}`) {
-          fileEntry = entry;
-        }
-      });
-      jarFile.deleteFile(fileEntry);
-      // jarFile.addLocalFile(`${LTFolderLocation}\\lclasses\\${patch.fileName}`, `${patch.path}\\${patch.realFileName}`);
-      jarFile.addLocalFile(`${LTFolderLocation}\\lclasses\\${patch.fileName}`, patch.path, patch.realFileName);
+      for (const patchIndex in patchs) {
+        const patch = patchs[patchIndex];
+        let fileEntry;
+        jarFile.getEntries().forEach(entry => {
+          if(entry.entryName === `${patch.path}/${patch.realFileName}`) {
+            fileEntry = entry;
+          }
+        });
+        jarFile.deleteFile(fileEntry);
+        jarFile.addLocalFile(`${LTFolderLocation}\\lclasses\\${patch.fileName}`, patch.path, patch.realFileName);
+      }
       jarFile.writeZip(`${currentFolderPath}\\currentJarFile.jar`, (err) => {
         if (err) throw err;
         resolve();
@@ -119,12 +159,13 @@ export async function patch(currentFolderPath, patchName) {
 }
 
 export async function saveBuild(currentFolderPath, selectedPatches) {
-  return new Promise((resolve) => {
-    // Applying patches
-    selectedPatches.forEach(async (patchName) => {
-      await patch(currentFolderPath, patchName);
-    });
+  // Applying patches
+  for (const patchIndex in selectedPatches) {
+    const patchName = selectedPatches[patchIndex];
+    await patch(currentFolderPath, patchName);
+  }
 
+  return new Promise((resolve) => {
     // Saving file
     setTimeout(() => {
       let filePath = electron.remote.dialog.showSaveDialogSync({
@@ -134,8 +175,12 @@ export async function saveBuild(currentFolderPath, selectedPatches) {
         filters: [{ name: "JAR File", extensions: [ "jar" ] }],
         properties: [ "showHiddenFiles", "dontAddToRecent" ]
       });
+      if(!filePath) {
+        resolve(false);
+        return;
+      }
       fs.copyFileSync(`${currentFolderPath}\\currentJarFile.jar`, filePath);
-      resolve();
-    }, 15000);
+      resolve(filePath);
+    }, 1500);
   });
 }

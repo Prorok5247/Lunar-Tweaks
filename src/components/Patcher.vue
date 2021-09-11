@@ -92,8 +92,7 @@ export default {
       enabled: false
     },
     patches: [
-      { name: "Freelook", internalName: "freelook", tooltip: "Get back Freelook on Hypixel" }, 
-      { name: "AutoTextHotkey", internalName: "autotexthotkey", tooltip: "Get AutoTextHotkey back on Hypixel" },
+      { name: "Freelook & AutoTextHotkey", internalName: "freelook", tooltip: "Get back Freelook and AutoTextHotkey on Hypixel" },
       { name: "Pinned servers", internalName: "pinnedServers", tooltip: "Remove any promoted/pinned servers from the server list" },
       { name: "Block server from disabling mods", internalName: "modspacket", tooltip: "Completely remove the packet : \"LCPacketModSettings\"" }
     ],
@@ -121,6 +120,7 @@ export default {
 
       this.startStep(1);
       this.currentFolder = await patcher.copyJarFileToTemp(this.$store.state.lunarFilePath);
+      this.$store.commit('setCurrentFolderPath', this.currentFolder);
       this.endStep(1);
       
       this.startStep(2);
@@ -154,6 +154,7 @@ export default {
         this.snackbar.enabled = false;
         this.$store.commit('setLunarFilePath', "");
         this.$store.commit('markFileAsChoosed', false);
+        this.$store.commit('markBuildedAs', false);
       }, 5050);
     },
     countDownExitTimer() {
@@ -166,8 +167,14 @@ export default {
     },
     async saveBuild() {
       this.buildButtonDisabled = true;
-      await patcher.saveBuild(this.currentFolder, this.selectedPatches);
+      const patched = await patcher.saveBuild(this.currentFolder, this.selectedPatches);
+      if(!patched) {
+        this.exitPatcher("Please select a destination path.");
+        return;
+      }
       this.buildButtonDisabled = false;
+      this.$store.commit('markBuildedAs', true);
+      this.$store.commit('setOutputFilePath', patched);
     }
   },
 

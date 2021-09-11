@@ -2,8 +2,9 @@
   <v-app>
     <AppBar/>
     <v-main>
-      <FileChooser v-if="!$store.state.fileChoosed"/>
-      <Patcher v-else/>
+      <FileChooser v-if="!$store.state.fileChoosed && !$store.state.builded"/>
+      <Patcher v-else-if="$store.state.fileChoosed && !$store.state.builded"/>
+      <Built v-else/>
     </v-main>
   </v-app>
 </template>
@@ -12,13 +13,15 @@
 import AppBar from './components/AppBar.vue';
 import FileChooser from './components/FileChooser.vue';
 import Patcher from './components/Patcher.vue';
+import Built from './components/Built.vue';
 
 export default {
   name: 'App',
   components: {
     AppBar,
     FileChooser,
-    Patcher
+    Patcher,
+    Built
   },
   data: () => ({
   }),

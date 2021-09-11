@@ -27,8 +27,13 @@
             <li><strong>Prorok</strong> for saving me a lot of time for the Hypixel Mods patch</li>
             <li>
               <strong>Aetopia</strong> for coding and maintaining <a @click="openLink('https://github.com/Aetopia/Lunar-Client-Lite-Launcher')">Lunar Client Lite</a>
-              <v-icon color="blue" size="20" left>mdi-open-in-new</v-icon>
+              <v-icon color="blue" size="20" class="ml-1">mdi-open-in-new</v-icon>
               <br><span class="italic">(We are not affiliated with Lunar Client Lite or Aetopia!)</span>
+            </li>
+            <li>
+              <strong>Specially</strong> for being a super cool person, promoting and trusting me.
+              <a @click="openLink('https://www.youtube.com/c/SpeciallyMC')">His YouTube channel</a>
+              <v-icon color="blue" size="20" class="ml-1">mdi-open-in-new</v-icon>
             </li>
           </ul>
         </v-card-text>

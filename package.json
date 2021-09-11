@@ -1,6 +1,6 @@
 {
   "name": "lunartweaks",
-  "version": "1.0.0",
+  "version": "1.0.0-rc1",
   "private": false,
   "author": {
     "name": "Cy0ze",
@@ -20,6 +20,7 @@
     "@electron/remote": "^1.2.1",
     "adm-zip": "^0.5.5",
     "core-js": "^3.6.5",
+    "fs-extra": "^10.0.0",
     "path": "^0.12.7",
     "vue": "^2.6.11",
     "vuetify": "^2.4.0",
@@ -60,5 +61,8 @@
     "last 2 versions",
     "not dead"
   ],
-  "files": ["**/*", "build/icon.*"]
+  "files": [
+    "**/*",
+    "build/*.*"
+  ]
 }

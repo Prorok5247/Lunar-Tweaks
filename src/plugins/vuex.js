@@ -6,14 +6,26 @@ Vue.use(Vuex);
 export default new Vuex.Store({
   state: {
     fileChoosed: false,
-    lunarFilePath: ""
+    lunarFilePath: "",
+    builded: false,
+    outputPath: "",
+    currentFolderPath: "",
   },
   mutations: {
     markFileAsChoosed(state, bool) {
-      state.fileChoosed = bool
+      state.fileChoosed = bool;
     },
-    setLunarFilePath(state, lunarFilePath) {
-      state.lunarFilePath = lunarFilePath;
+    markBuildedAs(state, bool) {
+      state.builded = bool;
+    },
+    setLunarFilePath(state, path) {
+      state.lunarFilePath = path;
+    },
+    setCurrentFolderPath(state, path) {
+      state.currentFolderPath = path;
+    },
+    setOutputFilePath(state, path) {
+      state.outputPath = path;
     }
   }
 });
