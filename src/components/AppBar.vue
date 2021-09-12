@@ -39,7 +39,7 @@
         </v-card-text>
         <v-divider></v-divider>
         <v-card-actions>
-          <v-btn color="primary" text @click="openLink('https://github.com/RichardDorian')">
+          <v-btn color="primary" text @click="openLink('https://github.com/RichardDorian/Lunar-Tweaks')">
             <v-icon left>mdi-github</v-icon>
             <span>GitHub</span>
           </v-btn>
